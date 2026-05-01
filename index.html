@@ -7,18 +7,77 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #111;
       color: #fff;
       overflow: hidden;
       text-align: center;
-    }#score {
+      background: #5ecbff;
+    }.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  image-rendering: pixelated;
+}
+
+.sky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    #7fd6ff 0%,
+    #7fd6ff 20%,
+    #66c7ff 20%,
+    #66c7ff 40%,
+    #4fb8ff 40%,
+    #4fb8ff 60%,
+    #39a9ff 60%,
+    #39a9ff 80%,
+    #2a98f0 80%,
+    #2a98f0 100%
+  );
+}
+
+.sun {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: #ffd54f;
+  top: 40px;
+  right: 40px;
+  box-shadow: 0 0 0 8px #ffcc33, 0 0 0 16px #ffb300;
+}
+
+.cloud {
+  position: absolute;
+  width: 120px;
+  height: 40px;
+  background: #fff;
+  box-shadow:
+    20px 0 #fff,
+    40px 0 #fff,
+    10px -10px #fff,
+    30px -10px #fff;
+  animation: moveClouds 20s linear infinite;
+  opacity: 0.9;
+}
+
+.cloud:nth-child(2) { top: 120px; animation-duration: 25s; }
+.cloud:nth-child(3) { top: 200px; animation-duration: 30s; }
+
+@keyframes moveClouds {
+  from { transform: translateX(-200px); }
+  to { transform: translateX(110vw); }
+}
+
+#score, #timer {
   position: fixed;
   top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 24px;
+  font-size: 20px;
   z-index: 10;
 }
+
+#score { left: 10px; }
+#timer { right: 10px; }
 
 #potato {
   position: absolute;
@@ -26,11 +85,10 @@
   cursor: pointer;
   user-select: none;
   transition: transform 0.1s;
+  z-index: 5;
 }
 
-#potato:active {
-  transform: scale(0.8);
-}
+#potato:active { transform: scale(0.8); }
 
 #startBtn {
   position: absolute;
@@ -44,60 +102,129 @@
   background: #ff9800;
   color: #000;
   cursor: pointer;
+  z-index: 10;
 }
 
-#startBtn:hover {
-  background: #ffc107;
+#endScreen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  display: none;
+  z-index: 10;
 }
 
   </style>
 </head>
 <body>
-  <div id="score">Score: 0</div>
+  <div class="sky">
+    <div class="sun"></div>
+    <div class="cloud" style="top:80px"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+  </div>  <div id="score">Score: 0</div>
+  <div id="timer">10:00</div>
   <button id="startBtn">Start Chaos</button>
-  <div id="potato">🥔</div>  <script>
+  <div id="potato">🥔</div>
+  <div id="endScreen"></div>  <script>
     const potato = document.getElementById("potato");
     const scoreEl = document.getElementById("score");
+    const timerEl = document.getElementById("timer");
     const startBtn = document.getElementById("startBtn");
+    const endScreen = document.getElementById("endScreen");
 
     let score = 0;
     let speed = 1000;
     let gameRunning = false;
+    let timeLeft = 600;
+    let timerInterval;
+
+    // Web Audio (random retro bleeps)
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtx();
+
+    function playSound() {
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      const freqs = [120, 180, 220, 300, 440, 660, 880];
+      const freq = freqs[Math.floor(Math.random() * freqs.length)];
+
+      osc.frequency.value = freq;
+      osc.type = Math.random() > 0.5 ? "square" : "triangle";
+
+      gain.gain.value = 0.1;
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    }
 
     function movePotato() {
       if (!gameRunning) return;
-
       const x = Math.random() * (window.innerWidth - 60);
       const y = Math.random() * (window.innerHeight - 60);
-
       potato.style.left = x + "px";
       potato.style.top = y + "px";
-
       setTimeout(movePotato, speed);
+    }
+
+    function updateTimer() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      if (timeLeft <= 0) endGame(false);
+      timeLeft--;
+    }
+
+    function endGame(win) {
+      gameRunning = false;
+      clearInterval(timerInterval);
+      potato.style.display = "none";
+      endScreen.style.display = "block";
+      endScreen.textContent = win ? "YOU WIN 🥔🔥" : "TIME'S UP 💀 YOU LOSE";
+      startBtn.style.display = "block";
+      startBtn.textContent = "Play Again";
     }
 
     potato.addEventListener("click", () => {
       if (!gameRunning) return;
 
+      playSound();
+
       score++;
       scoreEl.textContent = "Score: " + score;
 
-      // make it more chaotic
       if (speed > 200) speed -= 20;
 
       potato.textContent = Math.random() > 0.5 ? "🥔" : "🍟";
+
+      if (score >= 50) endGame(true);
     });
 
     startBtn.addEventListener("click", () => {
       score = 0;
       speed = 1000;
+      timeLeft = 600;
       gameRunning = true;
+
       scoreEl.textContent = "Score: 0";
+      potato.style.display = "block";
+      endScreen.style.display = "none";
       startBtn.style.display = "none";
+
+      if (audioCtx.state === "suspended") audioCtx.resume();
+
       movePotato();
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000);
     });
 
-    // initial position
     potato.style.left = "50%";
     potato.style.top = "50%";
   </script></body>
