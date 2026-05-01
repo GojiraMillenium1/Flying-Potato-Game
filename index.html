@@ -1,0 +1,104 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slap the Flying Potato 🥔</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      overflow: hidden;
+      text-align: center;
+    }#score {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  z-index: 10;
+}
+
+#potato {
+  position: absolute;
+  font-size: 60px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s;
+}
+
+#potato:active {
+  transform: scale(0.8);
+}
+
+#startBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 15px 30px;
+  font-size: 20px;
+  border: none;
+  border-radius: 10px;
+  background: #ff9800;
+  color: #000;
+  cursor: pointer;
+}
+
+#startBtn:hover {
+  background: #ffc107;
+}
+
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <button id="startBtn">Start Chaos</button>
+  <div id="potato">🥔</div>  <script>
+    const potato = document.getElementById("potato");
+    const scoreEl = document.getElementById("score");
+    const startBtn = document.getElementById("startBtn");
+
+    let score = 0;
+    let speed = 1000;
+    let gameRunning = false;
+
+    function movePotato() {
+      if (!gameRunning) return;
+
+      const x = Math.random() * (window.innerWidth - 60);
+      const y = Math.random() * (window.innerHeight - 60);
+
+      potato.style.left = x + "px";
+      potato.style.top = y + "px";
+
+      setTimeout(movePotato, speed);
+    }
+
+    potato.addEventListener("click", () => {
+      if (!gameRunning) return;
+
+      score++;
+      scoreEl.textContent = "Score: " + score;
+
+      // make it more chaotic
+      if (speed > 200) speed -= 20;
+
+      potato.textContent = Math.random() > 0.5 ? "🥔" : "🍟";
+    });
+
+    startBtn.addEventListener("click", () => {
+      score = 0;
+      speed = 1000;
+      gameRunning = true;
+      scoreEl.textContent = "Score: 0";
+      startBtn.style.display = "none";
+      movePotato();
+    });
+
+    // initial position
+    potato.style.left = "50%";
+    potato.style.top = "50%";
+  </script></body>
+</html>
